@@ -2,13 +2,6 @@
   "name":"Name des Objekts",
   "block": [
     {
-      "form_name": "polygon",
-      "form_type": {
-        "points": [10,20,50,70,80],
-        "color": "blue"
-      }
-    },
-    {
       "form_name": "rectangle",
       "form_type":  {
         "x": 20,
@@ -33,6 +26,7 @@
         "x": 20,
         "y": 30,
         "width": 50,
+        "height": 51,
         "color": "black"
       }
     }
