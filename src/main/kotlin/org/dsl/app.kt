@@ -1,13 +1,14 @@
 package org.dsl
 
 import com.google.gson.GsonBuilder
+import java.security.InvalidParameterException
 
-sealed class Shape(xPos: Int, yPos: Int, color: String)
+sealed class Shape(x: Int, y: Int, color: String)
 
-data class Root(val name: String, val shapes: List<Shape>, val width: Int, val height: Int, var color: String) : Shape(width, height, color)
-data class Rectangle(val xPos: Int, val yPos: Int, val height: Int, val width: Int, val color: String) : Shape(xPos, yPos, color)
-data class Circle(val xPos: Int, val yPos: Int, val radius: Int, val color: String) : Shape(xPos, yPos, color)
-data class Square(val xPos: Int, val yPos: Int, val width: Int, val color: String) : Shape(xPos, yPos, color)
+data class Root(val name: String, val width: Int, val height: Int, var color: String, val shapes: List<Shape>) : Shape(width, height, color)
+data class Rectangle(val x: Int, val y: Int, val height: Int, val width: Int, val color: String) : Shape(x, y, color)
+data class Circle(val x: Int, val y: Int, val radius: Int, val color: String) : Shape(x, y, color)
+data class Square(val x: Int, val y: Int, val width: Int, val color: String) : Shape(x, y, color)
 
 abstract class AbstractShapeBuilder {
     abstract val className: String
@@ -19,17 +20,23 @@ abstract class AbstractShapeBuilder {
 
 internal fun String?.testNull(className: String, text: String): String {
     if (this == null) throw IllegalArgumentException("""In $className: $text is not set""")
+    if (this.isBlank()) throw InvalidParameterException("""In $className: $this in $text is not allowed""")
     return this
 }
 
 internal fun Int?.testNegative(className: String, text: String): Int {
     if (this == null) throw IllegalArgumentException("""In $className: $text is not set""")
-    if (this <= 0) throw IllegalArgumentException("""In $className: $text should be greater 0""")
+    if (this <= 0) throw InvalidParameterException("""In $className: $text should be greater 0""")
     return this
 }
 
 internal fun Int.cmp(className: String, text: String, parentSize: Int): Int {
-    if (this >= parentSize) throw IllegalArgumentException("""In $className: $text must be lower than $parentSize""")
+    if (this >= parentSize) throw InvalidParameterException("""In $className: $text must be lower than $parentSize""")
+    return this
+}
+
+internal fun List<Shape>.testEmpty(className: String, text: String): List<Shape> {
+    if (this.isEmpty()) throw NoSuchElementException("""In $className: no $text found""")
     return this
 }
 
@@ -56,35 +63,29 @@ class ShapeBuilder() : AbstractShapeBuilder() {
 
     override fun build(): Root {
         val buildName = "$className under build"
-        if (shapes.size < 1) throw IllegalArgumentException("""In $buildName: none shapes are set""")
-        x.testNegative(buildName, "x")
-        y.testNegative(buildName, "y")
-        color.testNull(buildName, "color")
-        name.testNull(buildName, "name")
-        return Root(name!!, shapes, x!!, y!!, color!!)
+        val testedX = x.testNegative(buildName, "x")
+        val testedY = y.testNegative(buildName, "y")
+        val testedColor = color.testNull(buildName, "color")
+        val testedName = name.testNull(buildName, "name")
+        val testedShapes = shapes.testEmpty(buildName, "shape")
+        return Root(testedName,  testedX, testedY, testedColor, testedShapes)
     }
 
-    fun rectangle(block: RectangleBuilder.() -> Unit) {
-        x.testNegative(className, "x")
-        y.testNegative(className, "y")
-        val r = RectangleBuilder(x!!, y!!)
-        r.block()
+    fun rectangle(shape: RectangleBuilder.() -> Unit) {
+        val r = RectangleBuilder(x.testNegative(className, "x"), y.testNegative(className, "y"))
+        r.shape()
         shapes.add(r.build())
     }
 
-    fun circle(block: CircleBuilder.() -> Unit) {
-        x.testNegative(className, "x")
-        y.testNegative(className, "y")
-        val c = CircleBuilder(x!!, y!!)
-        c.block()
+    fun circle(shape: CircleBuilder.() -> Unit) {
+        val c = CircleBuilder(x.testNegative(className, "x"), y.testNegative(className, "y"))
+        c.shape()
         shapes.add(c.build())
     }
 
-    fun square(block: SquareBuilder.() -> Unit) {
-        x.testNegative(className, "x")
-        y.testNegative(className, "y")
-        val s = SquareBuilder(x!!, y!!)
-        s.block()
+    fun square(shape: SquareBuilder.() -> Unit) {
+        val s = SquareBuilder(x.testNegative(className, "x"), y.testNegative(className, "y"))
+        s.shape()
         shapes.add(s.build())
     }
 }
@@ -181,14 +182,60 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
     }
 }
 
-fun buildShape(block: ShapeBuilder.() -> Unit): String {
+fun buildShape(root: ShapeBuilder.() -> Unit): String {
     val b = ShapeBuilder()
-    b.block()
+    b.root()
     val root = b.build()
     return GsonBuilder().setPrettyPrinting().create().toJson(root)
 }
 
-fun main() {
+fun createExamples() {
+    val first = buildShape {
+        name ="Only Rectangles"
+        x = 100
+        y = 200
+        color = "White"
+        rectangle {
+            x = 10
+            y = 10
+            height = 10
+            width = 10
+            color = "Yellow"
+        }
+        rectangle {
+            x = 20
+            y = 20
+            height = 20
+            width = 20
+            color = "Red"
+        }
+        rectangle {
+            x = 30
+            y = 30
+            height = 30
+            width = 30
+            color = "Blue"
+        }
+        rectangle {
+            x = 40
+            y = 40
+            height = 40
+            width = 40
+            color = "Black"
+        }
+    }
+    val second = buildShape {
+        name = "Only circles"
+        x = 10
+        y = 10
+        color = "Blue"
+        circle {
+            x = 2
+            y = 3
+            radius = 5
+            color = "Red"
+        }
+    }
     val json = buildShape() {
         name = "Test"
         x = 30
@@ -221,5 +268,11 @@ fun main() {
             color = "Yellow"
         }
     }
-    print(json)
+    println(first)
+    println(second)
+    println(json)
+}
+
+fun main() {
+    createExamples()
 }
