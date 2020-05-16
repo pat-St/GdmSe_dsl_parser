@@ -57,22 +57,32 @@ class ShapeBuilder() : AbstractShapeBuilder() {
     override fun build(): Root {
         val buildName = "$className under build"
         if (shapes.size < 1) throw IllegalArgumentException("""In $buildName: none shapes are set""")
+        x.testNegative(buildName, "x")
+        y.testNegative(buildName, "y")
+        color.testNull(buildName, "color")
+        name.testNull(buildName, "name")
         return Root(name!!, shapes, x!!, y!!, color!!)
     }
 
     fun rectangle(block: RectangleBuilder.() -> Unit) {
+        x.testNegative(className, "x")
+        y.testNegative(className, "y")
         val r = RectangleBuilder(x!!, y!!)
         r.block()
         shapes.add(r.build())
     }
 
     fun circle(block: CircleBuilder.() -> Unit) {
+        x.testNegative(className, "x")
+        y.testNegative(className, "y")
         val c = CircleBuilder(x!!, y!!)
         c.block()
         shapes.add(c.build())
     }
 
     fun square(block: SquareBuilder.() -> Unit) {
+        x.testNegative(className, "x")
+        y.testNegative(className, "y")
         val s = SquareBuilder(x!!, y!!)
         s.block()
         shapes.add(s.build())
@@ -106,6 +116,9 @@ class RectangleBuilder(private var parentX: Int, private var parentY: Int) : Abs
         val buildName = "$className under build"
         x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
         y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
+        height.testNegative(buildName, "height")
+        width.testNegative(buildName, "width")
+        color.testNull(buildName, "color")
         return Rectangle(x!!, y!!, height!!, width!!, color!!)
     }
 }
@@ -133,6 +146,8 @@ class CircleBuilder(var parentX: Int, var parentY: Int) : AbstractShapeBuilder()
         val buildName = "$className under build"
         x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
         y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
+        radius.testNegative(buildName, "radius")
+        color.testNull(buildName, "color")
         return Circle(x!!, y!!, radius!!, color!!)
     }
 }
@@ -160,6 +175,8 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
         val buildName = "$className under build"
         x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
         y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
+        color.testNull(buildName, "color")
+        width.testNegative(buildName, "width")
         return Square(x!!, y!!, width!!, color!!)
     }
 }
@@ -175,7 +192,7 @@ fun main() {
     val json = buildShape() {
         name = "Test"
         x = 30
-        y = 42
+        y = 41
         color = "Black"
         rectangle {
             x = 3
