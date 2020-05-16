@@ -1,0 +1,34 @@
+{
+  "name": "Test",
+  "forms": [
+    {
+      "xPos": 3,
+      "yPos": 5,
+      "height": 43,
+      "width": 3,
+      "color": "Green"
+    },
+    {
+      "xPos": 3,
+      "yPos": 40,
+      "height": 43,
+      "width": 3,
+      "color": "Blue"
+    },
+    {
+      "xPos": 5,
+      "yPos": 10,
+      "radius": 5,
+      "color": "Red"
+    },
+    {
+      "xPos": 10,
+      "yPos": 5,
+      "width": 3,
+      "color": "Yellow"
+    }
+  ],
+  "width": 30,
+  "height": 42,
+  "color": "Black"
+}
