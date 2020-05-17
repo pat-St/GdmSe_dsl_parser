@@ -40,7 +40,7 @@ internal fun List<Shape>.testEmpty(className: String, text: String): List<Shape>
     return this
 }
 
-class ShapeBuilder() : AbstractShapeBuilder() {
+class ShapeBuilder(private var parentX: Int? = null, private var parentY: Int? = null) : AbstractShapeBuilder() {
     override val className = "ShapeBuilder"
     override var x: Int? = null
         set(value: Int?) {
@@ -63,8 +63,8 @@ class ShapeBuilder() : AbstractShapeBuilder() {
 
     override fun build(): Root {
         val buildName = "$className under build"
-        val testedX = x.testNegative(buildName, "x")
-        val testedY = y.testNegative(buildName, "y")
+        val testedX = if (parentX == null) { x.testNegative(buildName, "x") } else { x.testNegative(buildName, "x").cmp(buildName, "x", parentX!!) }
+        val testedY = if (parentY == null) { y.testNegative(buildName, "y") } else { y.testNegative(buildName, "y").cmp(buildName, "x", parentY!!) }
         val testedColor = color.testNull(buildName, "color")
         val testedName = name.testNull(buildName, "name")
         val testedShapes = shapes.testEmpty(buildName, "shape")
@@ -85,6 +85,12 @@ class ShapeBuilder() : AbstractShapeBuilder() {
 
     fun square(shape: SquareBuilder.() -> Unit) {
         val s = SquareBuilder(x.testNegative(className, "x"), y.testNegative(className, "y"))
+        s.shape()
+        shapes.add(s.build())
+    }
+
+    fun root(shape: ShapeBuilder.() -> Unit) {
+        val s = ShapeBuilder(x.testNegative(className, "x"), y.testNegative(className, "y"))
         s.shape()
         shapes.add(s.build())
     }
@@ -182,7 +188,7 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
     }
 }
 
-fun buildShape(root: ShapeBuilder.() -> Unit): String {
+fun generate(root: ShapeBuilder.() -> Unit): String {
     val b = ShapeBuilder()
     b.root()
     val root = b.build()
@@ -190,7 +196,7 @@ fun buildShape(root: ShapeBuilder.() -> Unit): String {
 }
 
 fun createExamples() {
-    val first = buildShape {
+    val first = generate() {
         name ="Only Rectangles"
         x = 100
         y = 200
@@ -224,7 +230,7 @@ fun createExamples() {
             color = "Black"
         }
     }
-    val second = buildShape {
+    val second = generate() {
         name = "Only circles"
         x = 10
         y = 10
@@ -236,7 +242,44 @@ fun createExamples() {
             color = "Red"
         }
     }
-    val json = buildShape() {
+    val third = generate() {
+        name = "With nested root"
+        x = 10
+        y = 10
+        color = "Blue"
+        circle {
+            x = 2
+            y = 3
+            radius = 5
+            color = "Red"
+        }
+        root {
+            name = "child root"
+            x = 9
+            y = 9
+            color = "Blue"
+            square {
+                x = 8
+                y = 5
+                width = 3
+                color = "Yellow"
+            }
+            root {
+                name = "child of child root"
+                x = 8
+                y = 8
+                color = "Blue"
+                rectangle {
+                    x = 3
+                    y = 5
+                    height = 43
+                    width = 3
+                    color = "Green"
+                }
+            }
+        }
+    }
+    val json = generate() {
         name = "Test"
         x = 30
         y = 41
@@ -270,6 +313,7 @@ fun createExamples() {
     }
     println(first)
     println(second)
+    println(third)
     println(json)
 }
 

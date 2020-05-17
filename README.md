@@ -4,6 +4,10 @@ Patrick Sterk
 
 Stefan Schmunk
 
+## Funktion
+
+Aus Konfigurationen JSON Objekte generieren, die Formen repräsentieren.
+
 ## Formale Spezifikation in EBNF als Metasprache
 
 |      |      ||
@@ -17,17 +21,48 @@ Stefan Schmunk
 |color         |=| String|
 |root          |=| name, x, y, color, shapes |
 |shapes        |=| shape, { shape }|
-|shape       |=|   rectangle \| circle \| square|
+|shape       |=| rectangle \| circle \| square \| root |
 |rectangle  |   =| x, y, width, height, color |
 |circle       | =| x, y, radius, color |
 |square |       =| x, y, width, color |
+
+## Interne DSL
+
+Objekte (Typen)
+
+```kotlin
+sealed class Shape(...)
+data class Root(...): Shape(...)
+data class Rectangle(...): Shape(...)
+data class Circle(...): Shape(...)
+data class Square(...): Shape(...)
+```
+
+Builder
+
+```kotlin
+abstract class AbstractShapeBuilder { abstract fun build(): Shape }
+class ShapeBuilder(...): AbstractShapeBuilder() 
+class RectangleBuilder(...): AbstractShapeBuilder() 
+class CircleBuilder(...): AbstractShapeBuilder()
+class SquareBuilder(...): AbstractShapeBuilder()
+```
+
+Generator
+
+```kotlin
+fun generate(root: ...): String {
+    // Erstellt aus der DSL ein Json Objekt in einem String
+    return GsonBuilder().setPrettyPrinting().create().toJson(root)
+}
+```
 
 ## Beispiel
 
 ### Eingabe per Kotlin DSL
 
 ```kotlin
-buildShape() {
+generate() {
     name = "Test"
     x = 30
     y = 41
@@ -150,6 +185,49 @@ buildShape() {
       "y": 3,
       "radius": 5,
       "color": "Red"
+    }
+  ]
+}
+{
+  "name": "With nested root",
+  "width": 10,
+  "height": 10,
+  "color": "Blue",
+  "shapes": [
+    {
+      "x": 2,
+      "y": 3,
+      "radius": 5,
+      "color": "Red"
+    },
+    {
+      "name": "child root",
+      "width": 9,
+      "height": 9,
+      "color": "Blue",
+      "shapes": [
+        {
+          "x": 8,
+          "y": 5,
+          "width": 3,
+          "color": "Yellow"
+        },
+        {
+          "name": "child of child root",
+          "width": 8,
+          "height": 8,
+          "color": "Blue",
+          "shapes": [
+            {
+              "x": 3,
+              "y": 5,
+              "height": 43,
+              "width": 3,
+              "color": "Green"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
