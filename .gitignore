@@ -2,7 +2,7 @@ out/
 lib/
 .idea/
 *.iml
-
+target/
 ### Kotlin ###
 # Compiled class file
 *.class
