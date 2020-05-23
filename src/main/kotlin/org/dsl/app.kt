@@ -1,7 +1,19 @@
 package org.dsl
 
 import com.google.gson.GsonBuilder
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import java.io.FileWriter
+import java.io.StringWriter
+import java.io.Writer
 import java.security.InvalidParameterException
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.OutputKeys
+import javax.xml.transform.Transformer
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+
 
 sealed class Shape(x: Int, y: Int, color: String)
 
@@ -188,15 +200,94 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
     }
 }
 
-fun generate(root: ShapeBuilder.() -> Unit): String {
+fun modelToText(root: ShapeBuilder.() -> Unit): String {
     val b = ShapeBuilder()
     b.root()
     val root = b.build()
     return GsonBuilder().setPrettyPrinting().create().toJson(root)
 }
 
+@Throws(Exception::class)
+fun prettyPrint(html: Document?) {
+    val tf: Transformer = TransformerFactory.newInstance().newTransformer()
+    val writer: Writer = StringWriter()
+
+    tf.setOutputProperty(OutputKeys.METHOD, "xml");
+    tf.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, "-//W3C//DTD XHTML 1.0 Transitional//EN");
+    tf.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd");
+    tf.setOutputProperty(OutputKeys.METHOD, "html");
+    tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+    tf.setOutputProperty(OutputKeys.INDENT, "yes");
+    tf.transform(DOMSource(html), StreamResult(writer))
+
+    println(writer)
+
+}
+
+fun modelToModel(root: ShapeBuilder.() -> Unit): Document {
+
+    val dbf = DocumentBuilderFactory.newInstance()
+    val builder = dbf.newDocumentBuilder()
+    val doc = builder.newDocument()
+
+    val b = ShapeBuilder()
+    b.root()
+    val root: Root = b.build()
+
+    val html: Element = doc.createElement("html")
+    doc.appendChild(html)
+    val body: Element = doc.createElement("body")
+    html.appendChild(body)
+
+    for(shape in root.shapes) {
+        when (shape) {
+            is Rectangle -> {
+                val svgElement: Element = doc.createElement("svg")
+                svgElement.setAttribute("width", shape.width.toString())
+                svgElement.setAttribute("height", shape.height.toString())
+                val rectElement: Element = doc.createElement("rect")
+                rectElement.setAttribute("width", shape.width.toString())
+                rectElement.setAttribute("height", shape.height.toString())
+                rectElement.setAttribute("x", shape.x.toString())
+                rectElement.setAttribute("y", shape.y.toString())
+                rectElement.setAttribute("fill", shape.color)
+                svgElement.appendChild(rectElement)
+                body.appendChild(svgElement)
+            }
+            is Circle -> {
+                val svgElement: Element = doc.createElement("svg")
+                svgElement.setAttribute("width", shape.radius.toString())
+                svgElement.setAttribute("height", shape.radius.toString())
+                val circleElement: Element = doc.createElement("rect")
+                circleElement.setAttribute("x", shape.x.toString())
+                circleElement.setAttribute("y", shape.y.toString())
+                circleElement.setAttribute("radius", shape.radius.toString())
+                circleElement.setAttribute("fill", shape.color)
+                svgElement.appendChild(circleElement)
+                body.appendChild(svgElement)
+            }
+            is Square -> {
+                val svgElement: Element = doc.createElement("svg")
+                svgElement.setAttribute("width", shape.width.toString())
+                svgElement.setAttribute("height", shape.width.toString())
+                val squareElement: Element = doc.createElement("rect")
+                squareElement.setAttribute("width", shape.width.toString())
+                squareElement.setAttribute("height", shape.width.toString())
+                squareElement.setAttribute("x", shape.x.toString())
+                squareElement.setAttribute("y", shape.y.toString())
+                squareElement.setAttribute("fill", shape.color)
+                svgElement.appendChild(squareElement)
+                body.appendChild(svgElement)
+            }
+            is Root -> println("Out of Scope")
+        }
+    }
+
+    return doc
+}
+
 fun createExamples() {
-    val first = generate() {
+    val example1: ShapeBuilder.() -> Unit = {
         name ="Only Rectangles"
         x = 100
         y = 200
@@ -204,33 +295,34 @@ fun createExamples() {
         rectangle {
             x = 10
             y = 10
-            height = 10
-            width = 10
+            height = 100
+            width = 100
             color = "Yellow"
         }
         rectangle {
             x = 20
             y = 20
-            height = 20
-            width = 20
+            height = 200
+            width = 200
             color = "Red"
         }
         rectangle {
             x = 30
             y = 30
-            height = 30
-            width = 30
+            height = 300
+            width = 300
             color = "Blue"
         }
         rectangle {
             x = 40
             y = 40
-            height = 40
-            width = 40
+            height = 400
+            width = 400
             color = "Black"
         }
     }
-    val second = generate() {
+
+    val example2: ShapeBuilder.() -> Unit = {
         name = "Only circles"
         x = 10
         y = 10
@@ -242,7 +334,7 @@ fun createExamples() {
             color = "Red"
         }
     }
-    val third = generate() {
+    val example3: ShapeBuilder.() -> Unit = {
         name = "With nested root"
         x = 10
         y = 10
@@ -279,7 +371,7 @@ fun createExamples() {
             }
         }
     }
-    val json = generate() {
+    val example4: ShapeBuilder.() -> Unit = {
         name = "Test"
         x = 30
         y = 41
@@ -311,10 +403,21 @@ fun createExamples() {
             color = "Yellow"
         }
     }
-    println(first)
-    println(second)
-    println(third)
-    println(json)
+    // Example1
+    println(modelToText(example1))
+    prettyPrint(modelToModel(example1))
+
+    // Example2
+    println(modelToText(example2))
+    prettyPrint(modelToModel(example2))
+
+    // Example3
+    println(modelToText(example3))
+    prettyPrint(modelToModel(example3))
+
+    // Example4
+    println(modelToText(example4))
+    prettyPrint(modelToModel(example4))
 }
 
 fun main() {
