@@ -1,6 +1,6 @@
+@file:JvmName("Main")
 package org.dsl
 
-import com.google.gson.GsonBuilder
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import java.io.StringWriter
