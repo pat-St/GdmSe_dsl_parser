@@ -3,7 +3,6 @@ package org.dsl
 import com.google.gson.GsonBuilder
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-import java.io.FileWriter
 import java.io.StringWriter
 import java.io.Writer
 import java.security.InvalidParameterException
@@ -31,8 +30,8 @@ abstract class AbstractShapeBuilder {
 }
 
 internal fun String?.testNull(className: String, text: String): String {
-    if (this == null) throw IllegalArgumentException("""In $className: $text is not set""")
-    if (this.isBlank()) throw InvalidParameterException("""In $className: $this in $text is not allowed""")
+    if (this == null || this.isBlank()) throw IllegalArgumentException("""In $className: $text is not set""")
+    if (this.length < 2) throw InvalidParameterException("""In $className: $this in $text is not allowed""")
     return this
 }
 
@@ -76,7 +75,7 @@ class ShapeBuilder(private var parentX: Int? = null, private var parentY: Int? =
     override fun build(): Root {
         val buildName = "$className under build"
         val testedX = if (parentX == null) { x.testNegative(buildName, "x") } else { x.testNegative(buildName, "x").cmp(buildName, "x", parentX!!) }
-        val testedY = if (parentY == null) { y.testNegative(buildName, "y") } else { y.testNegative(buildName, "y").cmp(buildName, "x", parentY!!) }
+        val testedY = if (parentY == null) { y.testNegative(buildName, "y") } else { y.testNegative(buildName, "y").cmp(buildName, "y", parentY!!) }
         val testedColor = color.testNull(buildName, "color")
         val testedName = name.testNull(buildName, "name")
         val testedShapes = shapes.testEmpty(buildName, "shape")
@@ -133,12 +132,12 @@ class RectangleBuilder(private var parentX: Int, private var parentY: Int) : Abs
 
     override fun build(): Rectangle {
         val buildName = "$className under build"
-        x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
-        y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
-        height.testNegative(buildName, "height")
-        width.testNegative(buildName, "width")
-        color.testNull(buildName, "color")
-        return Rectangle(x!!, y!!, height!!, width!!, color!!)
+        val testedX = x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
+        val testedY = y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
+        val testedHeight = height.testNegative(buildName, "height")
+        val testedWidth = width.testNegative(buildName, "width")
+        val testedColor = color.testNull(buildName, "color")
+        return Rectangle(testedX, testedY, testedHeight, testedWidth, testedColor)
     }
 }
 
@@ -163,11 +162,11 @@ class CircleBuilder(var parentX: Int, var parentY: Int) : AbstractShapeBuilder()
 
     override fun build(): Circle {
         val buildName = "$className under build"
-        x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
-        y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
-        radius.testNegative(buildName, "radius")
-        color.testNull(buildName, "color")
-        return Circle(x!!, y!!, radius!!, color!!)
+        val testedX = x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
+        val testedY = y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
+        val testedRadius = radius.testNegative(buildName, "radius")
+        val testedColor = color.testNull(buildName, "color")
+        return Circle(testedX, testedY, testedRadius, testedColor)
     }
 }
 
@@ -192,11 +191,12 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
 
     override fun build(): Square {
         val buildName = "$className under build"
-        x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
-        y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
-        color.testNull(buildName, "color")
-        width.testNegative(buildName, "width")
-        return Square(x!!, y!!, width!!, color!!)
+        val testedX = x.testNegative(buildName, "x").cmp(buildName, "x", parentX)
+        val testedY = y.testNegative(buildName, "y").cmp(buildName, "y", parentY)
+        val testedWidth = width.testNegative(buildName, "width")
+        val testedColor = color.testNull(buildName, "color")
+
+        return Square(testedX, testedY, testedWidth, testedColor)
     }
 }
 
@@ -239,12 +239,13 @@ fun modelToModel(root: ShapeBuilder.() -> Unit): Document {
     val body: Element = doc.createElement("body")
     html.appendChild(body)
 
+    val svgElement: Element = doc.createElement("svg")
+    svgElement.setAttribute("width", root.width.toString())
+    svgElement.setAttribute("height", root.height.toString())
+
     for(shape in root.shapes) {
         when (shape) {
             is Rectangle -> {
-                val svgElement: Element = doc.createElement("svg")
-                svgElement.setAttribute("width", shape.width.toString())
-                svgElement.setAttribute("height", shape.height.toString())
                 val rectElement: Element = doc.createElement("rect")
                 rectElement.setAttribute("width", shape.width.toString())
                 rectElement.setAttribute("height", shape.height.toString())
@@ -252,24 +253,16 @@ fun modelToModel(root: ShapeBuilder.() -> Unit): Document {
                 rectElement.setAttribute("y", shape.y.toString())
                 rectElement.setAttribute("fill", shape.color)
                 svgElement.appendChild(rectElement)
-                body.appendChild(svgElement)
             }
             is Circle -> {
-                val svgElement: Element = doc.createElement("svg")
-                svgElement.setAttribute("width", shape.radius.toString())
-                svgElement.setAttribute("height", shape.radius.toString())
-                val circleElement: Element = doc.createElement("rect")
-                circleElement.setAttribute("x", shape.x.toString())
-                circleElement.setAttribute("y", shape.y.toString())
-                circleElement.setAttribute("radius", shape.radius.toString())
+                val circleElement: Element = doc.createElement("circle")
+                circleElement.setAttribute("cx", shape.x.toString())
+                circleElement.setAttribute("cy", shape.y.toString())
+                circleElement.setAttribute("r", shape.radius.toString())
                 circleElement.setAttribute("fill", shape.color)
                 svgElement.appendChild(circleElement)
-                body.appendChild(svgElement)
             }
             is Square -> {
-                val svgElement: Element = doc.createElement("svg")
-                svgElement.setAttribute("width", shape.width.toString())
-                svgElement.setAttribute("height", shape.width.toString())
                 val squareElement: Element = doc.createElement("rect")
                 squareElement.setAttribute("width", shape.width.toString())
                 squareElement.setAttribute("height", shape.width.toString())
@@ -277,12 +270,11 @@ fun modelToModel(root: ShapeBuilder.() -> Unit): Document {
                 squareElement.setAttribute("y", shape.y.toString())
                 squareElement.setAttribute("fill", shape.color)
                 svgElement.appendChild(squareElement)
-                body.appendChild(svgElement)
             }
             is Root -> println("Out of Scope")
         }
     }
-
+    body.appendChild(svgElement)
     return doc
 }
 
@@ -371,36 +363,51 @@ fun createExamples() {
             }
         }
     }
-    val example4: ShapeBuilder.() -> Unit = {
-        name = "Test"
-        x = 30
-        y = 41
+    val stickFigure: ShapeBuilder.() -> Unit = {
+        name = "stick figure"
+        x = 100
+        y = 100
         color = "Black"
         rectangle {
-            x = 3
-            y = 5
-            height = 43
-            width = 3
+            x = 29
+            y = 18
+            height = 30
+            width = 2
             color = "Green"
         }
         rectangle {
-            x = 3
-            y = 40
-            height = 43
-            width = 3
+            x = 10
+            y = 25
+            height = 2
+            width = 40
             color = "Blue"
         }
-        circle {
-            x = 5
-            y = 10
-            radius = 5
+        rectangle {
+            x = 20
+            y = 46
+            height = 2
+            width = 20
+            color = "Black"
+        }
+        rectangle {
+            x = 20
+            y = 46
+            height = 30
+            width = 2
             color = "Red"
         }
-        square {
-            x = 10
-            y = 5
-            width = 3
-            color = "Yellow"
+        rectangle {
+            x = 40
+            y = 46
+            height = 30
+            width = 2
+            color = "Red"
+        }
+        circle {
+            x = 30
+            y = 10
+            radius = 8
+            color = "Red"
         }
     }
     // Example1
@@ -416,8 +423,8 @@ fun createExamples() {
     prettyPrint(modelToModel(example3))
 
     // Example4
-    println(modelToText(example4))
-    prettyPrint(modelToModel(example4))
+    println(modelToText(stickFigure))
+    prettyPrint(modelToModel(stickFigure))
 }
 
 fun main() {
