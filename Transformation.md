@@ -5,7 +5,7 @@ Patrick Sterk
 Stefan Schmunk
 
 ## Funktion
-Generierung von Formen in JSON Objekte und HTML SVG Elemente.
+Generierung von Formen in HTML SVG Elemente.
 ## M2T: Eigenschaften
 - Spezialgenerator mit interner Abbildungsvorschrift
 - Plattformunabhängiges Zielmodell
@@ -35,7 +35,6 @@ val stickFigure: ShapeBuilder.() -> Unit = {
         name = "stick figure"
         x = 100
         y = 100
-        color = "Black"
         rectangle {
             x = 29
             y = 18
@@ -85,13 +84,13 @@ val stickFigure: ShapeBuilder.() -> Unit = {
 <html>
     <body>
         <svg height="100" width="100">
-        <rect fill="Green" height="30" width="2" x="29" y="18"></rect>
-        <rect fill="Blue" height="2" width="40" x="10" y="25"></rect>
-        <rect fill="Black" height="2" width="20" x="20" y="46"></rect>
-        <rect fill="Red" height="30" width="2" x="20" y="46"></rect>
-        <rect fill="Red" height="30" width="2" x="40" y="46"></rect>
-        <circle cx="30" cy="10" fill="Red" r="8"></circle>
-    </svg>
+            <rect fill="Green" height="30" width="2" x="29" y="18"></rect>
+            <rect fill="Blue" height="2" width="40" x="10" y="25"></rect>
+            <rect fill="Black" height="2" width="20" x="20" y="46"></rect>
+            <rect fill="Red" height="30" width="2" x="20" y="46"></rect>
+            <rect fill="Red" height="30" width="2" x="40" y="46"></rect>
+            <circle cx="30" cy="10" fill="Red" r="8"></circle>
+    	</svg>
     </body>
 </html>
 ```

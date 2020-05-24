@@ -14,18 +14,17 @@ import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 
 
-sealed class Shape(x: Int, y: Int, color: String)
+sealed class Shape()
 
-data class Root(val name: String, val width: Int, val height: Int, var color: String, val shapes: List<Shape>) : Shape(width, height, color)
-data class Rectangle(val x: Int, val y: Int, val height: Int, val width: Int, val color: String) : Shape(x, y, color)
-data class Circle(val x: Int, val y: Int, val radius: Int, val color: String) : Shape(x, y, color)
-data class Square(val x: Int, val y: Int, val width: Int, val color: String) : Shape(x, y, color)
+data class Root(val name: String, val width: Int, val height: Int, val shapes: List<Shape>) : Shape()
+data class Rectangle(val x: Int, val y: Int, val height: Int, val width: Int, val color: String) : Shape()
+data class Circle(val x: Int, val y: Int, val radius: Int, val color: String) : Shape()
+data class Square(val x: Int, val y: Int, val width: Int, val color: String) : Shape()
 
 abstract class AbstractShapeBuilder {
     abstract val className: String
     abstract var x: Int?
     abstract var y: Int?
-    abstract var color: String?
     abstract fun build(): Shape
 }
 
@@ -51,7 +50,7 @@ internal fun List<Shape>.testEmpty(className: String, text: String): List<Shape>
     return this
 }
 
-class ShapeBuilder(private var parentX: Int? = null, private var parentY: Int? = null) : AbstractShapeBuilder() {
+class ShapeBuilder() : AbstractShapeBuilder() {
     override val className = "ShapeBuilder"
     override var x: Int? = null
         set(value: Int?) {
@@ -60,10 +59,6 @@ class ShapeBuilder(private var parentX: Int? = null, private var parentY: Int? =
     override var y: Int? = null
         set(value: Int?) {
             field = value.testNegative(className, "y")
-        }
-    override var color: String? = null
-        set(value: String?) {
-            field = value.testNull(className, "color")
         }
     var name: String? = null
         set(value: String?) {
@@ -74,12 +69,11 @@ class ShapeBuilder(private var parentX: Int? = null, private var parentY: Int? =
 
     override fun build(): Root {
         val buildName = "$className under build"
-        val testedX = if (parentX == null) { x.testNegative(buildName, "x") } else { x.testNegative(buildName, "x").cmp(buildName, "x", parentX!!) }
-        val testedY = if (parentY == null) { y.testNegative(buildName, "y") } else { y.testNegative(buildName, "y").cmp(buildName, "y", parentY!!) }
-        val testedColor = color.testNull(buildName, "color")
+        val testedX = x.testNegative(buildName, "x")
+        val testedY = y.testNegative(buildName, "y")
         val testedName = name.testNull(buildName, "name")
         val testedShapes = shapes.testEmpty(buildName, "shape")
-        return Root(testedName,  testedX, testedY, testedColor, testedShapes)
+        return Root(testedName,  testedX, testedY, testedShapes)
     }
 
     fun rectangle(shape: RectangleBuilder.() -> Unit) {
@@ -99,12 +93,6 @@ class ShapeBuilder(private var parentX: Int? = null, private var parentY: Int? =
         s.shape()
         shapes.add(s.build())
     }
-
-    fun root(shape: ShapeBuilder.() -> Unit) {
-        val s = ShapeBuilder(x.testNegative(className, "x"), y.testNegative(className, "y"))
-        s.shape()
-        shapes.add(s.build())
-    }
 }
 
 class RectangleBuilder(private var parentX: Int, private var parentY: Int) : AbstractShapeBuilder() {
@@ -117,7 +105,7 @@ class RectangleBuilder(private var parentX: Int, private var parentY: Int) : Abs
         set(value: Int?) {
             field = value.testNegative(className, "y")
         }
-    override var color: String? = null
+    var color: String? = null
         set(value: String?) {
             field = value.testNull(className, "color")
         }
@@ -151,7 +139,7 @@ class CircleBuilder(var parentX: Int, var parentY: Int) : AbstractShapeBuilder()
         set(value: Int?) {
             field = value.testNegative(className, "y")
         }
-    override var color: String? = null
+    var color: String? = null
         set(value: String?) {
             field = value.testNull(className, "color")
         }
@@ -180,7 +168,7 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
         set(value: Int?) {
             field = value.testNegative(className, "y")
         }
-    override var color: String? = null
+    var color: String? = null
         set(value: String?) {
             field = value.testNull(className, "color")
         }
@@ -198,13 +186,6 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
 
         return Square(testedX, testedY, testedWidth, testedColor)
     }
-}
-
-fun modelToText(root: ShapeBuilder.() -> Unit): String {
-    val b = ShapeBuilder()
-    b.root()
-    val root = b.build()
-    return GsonBuilder().setPrettyPrinting().create().toJson(root)
 }
 
 @Throws(Exception::class)
@@ -283,7 +264,6 @@ fun createExamples() {
         name ="Only Rectangles"
         x = 100
         y = 200
-        color = "White"
         rectangle {
             x = 10
             y = 10
@@ -318,56 +298,17 @@ fun createExamples() {
         name = "Only circles"
         x = 10
         y = 10
-        color = "Blue"
         circle {
             x = 2
             y = 3
             radius = 5
             color = "Red"
-        }
-    }
-    val example3: ShapeBuilder.() -> Unit = {
-        name = "With nested root"
-        x = 10
-        y = 10
-        color = "Blue"
-        circle {
-            x = 2
-            y = 3
-            radius = 5
-            color = "Red"
-        }
-        root {
-            name = "child root"
-            x = 9
-            y = 9
-            color = "Blue"
-            square {
-                x = 8
-                y = 5
-                width = 3
-                color = "Yellow"
-            }
-            root {
-                name = "child of child root"
-                x = 8
-                y = 8
-                color = "Blue"
-                rectangle {
-                    x = 3
-                    y = 5
-                    height = 43
-                    width = 3
-                    color = "Green"
-                }
-            }
         }
     }
     val stickFigure: ShapeBuilder.() -> Unit = {
         name = "stick figure"
         x = 100
         y = 100
-        color = "Black"
         rectangle {
             x = 29
             y = 18
@@ -411,19 +352,12 @@ fun createExamples() {
         }
     }
     // Example1
-    println(modelToText(example1))
     prettyPrint(modelToModel(example1))
 
     // Example2
-    println(modelToText(example2))
     prettyPrint(modelToModel(example2))
 
-    // Example3
-    println(modelToText(example3))
-    prettyPrint(modelToModel(example3))
-
     // Example4
-    println(modelToText(stickFigure))
     prettyPrint(modelToModel(stickFigure))
 }
 
