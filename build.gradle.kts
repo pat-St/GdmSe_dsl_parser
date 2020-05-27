@@ -1,11 +1,17 @@
 plugins {
     kotlin("jvm") version "1.3.71"
     kotlin("plugin.serialization") version "1.3.70"
+    application
+}
+
+application {
+    mainClassName = "org.dsl.Main"
 }
 
 repositories {
     jcenter()
     mavenCentral()
+    maven(  "https://dl.bintray.com/lukasjapan/de.cvguy.kotlin")
 }
 
 sourceSets {
@@ -20,12 +26,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("stdlib-js"))
     implementation(kotlin("reflect"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
-    implementation("com.google.code.gson:gson:2.8.6")
-    //implementation("org.jetbrains.kotlinx:kotlinx-html:0.6.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.3")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.6.3")
+    implementation("de.cvguy.kotlin:koreander:0.1.0")
 }
 
 group = "org.dsl"
