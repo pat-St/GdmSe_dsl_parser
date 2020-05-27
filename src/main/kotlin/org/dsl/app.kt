@@ -1,25 +1,41 @@
 @file:JvmName("Main")
 package org.dsl
 
-import org.w3c.dom.Document
-import org.w3c.dom.Element
-import java.io.StringWriter
-import java.io.Writer
 import java.security.InvalidParameterException
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.OutputKeys
-import javax.xml.transform.Transformer
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
+import de.cvguy.kotlin.koreander.Koreander
+import java.io.File
 
+sealed class Shape() {
+    abstract val type: String
+    abstract val color: String?
+    abstract val x: Int?
+    abstract val y: Int?
+    abstract val height: Int?
+    abstract val width: Int?
+    abstract val radius: Int?
+}
 
-sealed class Shape()
-
-data class Root(val name: String, val width: Int, val height: Int, val shapes: List<Shape>) : Shape()
-data class Rectangle(val x: Int, val y: Int, val height: Int, val width: Int, val color: String) : Shape()
-data class Circle(val x: Int, val y: Int, val radius: Int, val color: String) : Shape()
-data class Square(val x: Int, val y: Int, val width: Int, val color: String) : Shape()
+data class Root(val name: String, override val width: Int, override val height: Int, val shapes: List<Shape>) : Shape() {
+    override val type: String ="Root"
+    override val x: Int? = null
+    override val y: Int? = null
+    override val radius: Int? = null
+    override val color: String? = null
+}
+data class Rectangle(override val x: Int, override val y: Int, override val height: Int, override val width: Int, override val color: String) : Shape() {
+    override val type: String ="Rectangle"
+    override val radius: Int? = null
+}
+data class Circle(override val x: Int, override val y: Int, override val radius: Int, override val color: String) : Shape() {
+    override val type: String ="Circle"
+    override val height: Int? = null
+    override val width: Int? = null
+}
+data class Square(override val x: Int, override val y: Int, override val width: Int, override val color: String) : Shape() {
+    override val type: String ="Square"
+    override val height: Int? = null
+    override val radius: Int? = null
+}
 
 abstract class AbstractShapeBuilder {
     abstract val className: String
@@ -48,6 +64,10 @@ internal fun Int.cmp(className: String, text: String, parentSize: Int): Int {
 internal fun List<Shape>.testEmpty(className: String, text: String): List<Shape> {
     if (this.isEmpty()) throw NoSuchElementException("""In $className: no $text found""")
     return this
+}
+
+fun isRectange(input: Any): Boolean {
+    return input is Rectangle
 }
 
 class ShapeBuilder() : AbstractShapeBuilder() {
@@ -188,75 +208,15 @@ class SquareBuilder(private var parentX: Int, private var parentY: Int) : Abstra
     }
 }
 
-@Throws(Exception::class)
-fun prettyPrint(html: Document?) {
-    val tf: Transformer = TransformerFactory.newInstance().newTransformer()
-    val writer: Writer = StringWriter()
-
-    tf.setOutputProperty(OutputKeys.METHOD, "xml");
-    tf.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, "-//W3C//DTD XHTML 1.0 Transitional//EN");
-    tf.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd");
-    tf.setOutputProperty(OutputKeys.METHOD, "html");
-    tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-    tf.setOutputProperty(OutputKeys.INDENT, "yes");
-    tf.transform(DOMSource(html), StreamResult(writer))
-
-    println(writer)
-
-}
-
-fun modelToModel(root: ShapeBuilder.() -> Unit): Document {
-
-    val dbf = DocumentBuilderFactory.newInstance()
-    val builder = dbf.newDocumentBuilder()
-    val doc = builder.newDocument()
+fun modelToModel(root: ShapeBuilder.() -> Unit): Unit {
 
     val b = ShapeBuilder()
     b.root()
     val root: Root = b.build()
 
-    val html: Element = doc.createElement("html")
-    doc.appendChild(html)
-    val body: Element = doc.createElement("body")
-    html.appendChild(body)
-
-    val svgElement: Element = doc.createElement("svg")
-    svgElement.setAttribute("width", root.width.toString())
-    svgElement.setAttribute("height", root.height.toString())
-
-    for(shape in root.shapes) {
-        when (shape) {
-            is Rectangle -> {
-                val rectElement: Element = doc.createElement("rect")
-                rectElement.setAttribute("width", shape.width.toString())
-                rectElement.setAttribute("height", shape.height.toString())
-                rectElement.setAttribute("x", shape.x.toString())
-                rectElement.setAttribute("y", shape.y.toString())
-                rectElement.setAttribute("fill", shape.color)
-                svgElement.appendChild(rectElement)
-            }
-            is Circle -> {
-                val circleElement: Element = doc.createElement("circle")
-                circleElement.setAttribute("cx", shape.x.toString())
-                circleElement.setAttribute("cy", shape.y.toString())
-                circleElement.setAttribute("r", shape.radius.toString())
-                circleElement.setAttribute("fill", shape.color)
-                svgElement.appendChild(circleElement)
-            }
-            is Square -> {
-                val squareElement: Element = doc.createElement("rect")
-                squareElement.setAttribute("width", shape.width.toString())
-                squareElement.setAttribute("height", shape.width.toString())
-                squareElement.setAttribute("x", shape.x.toString())
-                squareElement.setAttribute("y", shape.y.toString())
-                squareElement.setAttribute("fill", shape.color)
-                svgElement.appendChild(squareElement)
-            }
-            is Root -> println("Out of Scope")
-        }
-    }
-    body.appendChild(svgElement)
-    return doc
+    val input = File("input.kor")
+    val output = Koreander().render(input,root)
+    println(output.toString())
 }
 
 fun createExamples() {
@@ -352,13 +312,13 @@ fun createExamples() {
         }
     }
     // Example1
-    prettyPrint(modelToModel(example1))
+    modelToModel(example1)
 
     // Example2
-    prettyPrint(modelToModel(example2))
+    modelToModel(example2)
 
     // Example4
-    prettyPrint(modelToModel(stickFigure))
+    modelToModel(stickFigure)
 }
 
 fun main() {

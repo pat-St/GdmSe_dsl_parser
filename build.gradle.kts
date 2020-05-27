@@ -11,6 +11,7 @@ application {
 repositories {
     jcenter()
     mavenCentral()
+    maven(  "https://dl.bintray.com/lukasjapan/de.cvguy.kotlin")
 }
 
 sourceSets {
@@ -25,6 +26,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("stdlib-js"))
     implementation(kotlin("reflect"))
+    implementation("de.cvguy.kotlin:koreander:0.1.0")
 }
 
 group = "org.dsl"

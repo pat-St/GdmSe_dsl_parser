@@ -1,0 +1,11 @@
+!!!
+%html
+    %body
+        %h1 ${name}
+        %svg width=${width} height=${height}
+            - shapes.filter{ i -> i.type.equals("Rectangle")}.forEach -> rect
+                %rect fill=${rect.color} height=${rect.height} width=${rect.width} x=${rect.x} y=${rect.y}
+            - shapes.filter{ i -> i.type.equals("Circle")}.forEach -> circle
+                %circle fill=${circle.color} r=${circle.radius}  cx=${circle.x} cy=${circle.y}
+            - shapes.filter{ i -> i.type.equals("Square")}.forEach -> rect
+                %rect fill=${rect.color} height=${rect.width} width=${rect.width} x=${rect.x} y=${rect.y}
